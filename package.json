@@ -1,0 +1,25 @@
+{
+  "name": "parser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexPetrov7311/parserParking.git"
+  },
+  "author": "Alex Petrov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AlexPetrov7311/parserParking/issues"
+  },
+  "dependencies":{
+    "http":"*",
+    "request": "*",
+    "fs": "*",
+    "cheerio":"*"
+  },
+  "homepage": "https://github.com/AlexPetrov7311/parserParking#readme"
+}
