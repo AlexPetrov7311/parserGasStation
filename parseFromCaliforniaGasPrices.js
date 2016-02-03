@@ -20,15 +20,11 @@ var start = new Date().getTime();
 // First I want to read the file
 fs.readFile('californiaGasStations.json', function read(err, response) {
     if (err) {
-        //throw err;
         console.log('Файл californiaGasStations.json не найден.');
-
     }else{
         data = JSON.parse(response);
     }
     console.log('Всего записей в базе '+data.length);
-    // Invoke the next step here however you like
-    //console.log(content);   // Put all of the code here (not the best solution)
 });
 
 
@@ -47,13 +43,24 @@ fs.readFile('coords.json', function read(err, data) {
     }else{
         list = JSON.parse(data);
         lastList = JSON.parse(data);
-        //list.splice(0,55000);
+        areas = 0;
+        points = 0;
+        while (!(list[0][2]>0)){
+            console.log('Сокращаем стек'+list[0][2]+','+ list.length);
+            if (list[0][2]>0){
+                areas++;
+                points += list[0][2];
+            };
+            list.splice(0,1);
+            if (list.length==0){
+                break;
+            }
+        };
+        console.log('Получилось'+list.length+ ', заправок: '+points+', областей: '+areas);
     }
     console.log('Всего записей '+list.length);
 
     parse();
-    // Invoke the next step here however you like
-    //console.log(content);   // Put all of the code here (not the best solution)
 });
 
 var rewriteCoords = function(list){
@@ -70,15 +77,32 @@ var rewriteCoords = function(list){
 
 var parse = function(){
 
+    while (true) {
 
-    if (!list[0][2]){
-        if (list.length>=2)
-        if (list[1][2]) {
-            console.log('Пропуск. Осталось ' + list.length);
+        // Пропускает запросы по которым нет мест
+        if (!list[0][2]) {
+            if (list.length >= 2)
+                if (list[1][2]) {
+                    console.log('Пропуск. Осталось ' + list.length);
+                }
+            list.splice(0, 1);
+            continue;
         }
-        list.splice(0,1);
-        parse();
-        return true;
+
+        // Пропустит запросы, которые делались за последние 310 суток)
+        if (list[0][3] != undefined) {
+            if (list[0][2] > 0) {
+                date = new Date();
+                if ((date.getTime() - list[0][3]) < 1000 * 60 * 60 * 24 * 310) {
+                    list.splice(0, 1);
+                    continue;
+                }
+            }
+        }
+
+
+        break;
+
     }
 
     var http = require('http');
@@ -86,9 +110,7 @@ var parse = function(){
     var options = {
         host: 'www.californiagasprices.com',
         path: '/ajaxpro/GasBuddy_ASPX.GoogleMapGasPrices,GasBuddy_ASPX.ashx',
-        //port: '1338',
         method: 'POST',
-        //This is the only line that is new. `headers` is an object with the headers to request
         headers: {
             'X-AjaxPro-Method':'gus'
         }
@@ -102,25 +124,18 @@ var parse = function(){
 
         response.on('end', function () {
             //console.log(str);
-            //console.log('parse');
-            //console.log(parser.parseString);
-            //return 0;
 
             object = parser.parseString(str);
             data = parser.addInMass(data,object);
             list[0][2] = object[1].length;
-
+            list[0][3] = (new Date()).getTime();
             rewriteCoords(list);
             countStack++;
 
             console.log('Осталось ' + list.length+', '+(list.length/(lastList.length/100)).toFixed(3) +'%, полученное количество - '+list[0][2]+' координаты:('+list[0][0]+','+list[0][1]+'), countStack: '+countStack);
             list.splice(0,1);
             if (list.length){
-                //fs.writeFile("californiaGasStations.json", JSON.stringify(data));
-
                 parse();
-            }else{
-                //fs.writeFile("californiaGasStations.json", JSON.stringify(data));
             }
             if (countStack==100){
                 console.log('Записываем данные в файл.')
@@ -128,14 +143,6 @@ var parse = function(){
             }
         });
     }
-
-    //var param = {dMaxX: -119.6458558195801,
-    //    dMaxY: 36.84623126700088,
-    //    dMinX: -119.77975169360354,
-    //    dMinY: 36.76376387408884,
-    //    sFuelType: "A",
-    //    sTimeLimit: "22224"
-    //}
 
     var param = {dMaxX: list[0][0]+step,
         dMaxY: list[0][1]+step,
